@@ -156,6 +156,40 @@ const PerformanceOracle_ABI = [
   "event MarketUpdated(address indexed oldMarket, address indexed newMarket)",
 ];
 
+const IndexVault_ABI = [
+  "function usdt() view returns (address)",
+  "function market() view returns (address)",
+  "function nextIndexId() view returns (uint256)",
+  "function indexCount() view returns (uint256)",
+  "function indexIds(uint256 index) view returns (uint256)",
+  "function defineIndex(string name, uint8 kind, uint256[] components, uint16[] weightBps) returns (uint256 indexId)",
+  "function mint(uint256 indexId, uint256 units, uint256 maxTotal)",
+  "function redeem(uint256 indexId, uint256 units, uint256 minNet)",
+  "function nav(uint256 indexId) view returns (uint256 navPerUnit)",
+  "function getIndex(uint256 indexId) view returns (string name, uint8 kind, address basketToken, uint256[] components, uint16[] weightBps, bool active)",
+  "function componentValues(uint256 indexId) view returns (uint256[] playerIds, uint256[] values, uint256[] balances)",
+  "function deactivateIndex(uint256 indexId)",
+  "function owner() view returns (address)",
+  "event IndexDefined(uint256 indexed indexId, string name, uint8 kind, address basketToken)",
+  "event IndexMinted(uint256 indexed indexId, address indexed user, uint256 units, uint256 totalCost)",
+  "event IndexRedeemed(uint256 indexed indexId, address indexed user, uint256 units, uint256 totalProceeds)",
+  "event IndexDeactivated(uint256 indexed indexId)",
+];
+
+const IndexToken_ABI = [
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function totalSupply() view returns (uint256)",
+  "function balanceOf(address account) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+  "event Approval(address indexed owner, address indexed spender, uint256 value)",
+];
+
 module.exports = {
   MockUSDT_ABI,
   PlayerToken_ABI,
@@ -163,4 +197,6 @@ module.exports = {
   PlayerMarket_ABI,
   PlayerAMM_ABI,
   PerformanceOracle_ABI,
+  IndexVault_ABI,
+  IndexToken_ABI,
 };

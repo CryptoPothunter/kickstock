@@ -6,6 +6,8 @@ const {
   PlayerAMM_ABI,
   MockUSDT_ABI,
   PerformanceOracle_ABI,
+  IndexVault_ABI,
+  IndexToken_ABI,
 } = require('@kickstock/abi')
 
 export const ADDRESSES = {
@@ -14,6 +16,7 @@ export const ADDRESSES = {
   'PlayerToken (impl)': '0xA177d2c0669eD77FF2FED4e820412fB6b9643364',
   PlayerMarket: process.env.NEXT_PUBLIC_PLAYER_MARKET || '0xd98B4e5296c66aE56c55C5A4c1e9EB0DD512196f',
   PerformanceOracle: process.env.NEXT_PUBLIC_PERFORMANCE_ORACLE || '0xF1277da9b1F4b7b72A3A16EC8C17a00Ce702C056',
+  IndexVault: process.env.NEXT_PUBLIC_INDEX_VAULT || '',
 }
 
 export const ABIS = {
@@ -22,6 +25,8 @@ export const ABIS = {
   PlayerAMM: parseAbi(PlayerAMM_ABI),
   MockUSDT: parseAbi(MockUSDT_ABI),
   PerformanceOracle: parseAbi(PerformanceOracle_ABI),
+  IndexVault: parseAbi(IndexVault_ABI),
+  IndexToken: parseAbi(IndexToken_ABI),
 }
 
 export const INDEXER_URL = process.env.NEXT_PUBLIC_INDEXER_URL || 'http://localhost:4000/api'
