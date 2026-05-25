@@ -29,6 +29,7 @@ kickstock/
 │   │   ├── PlayerTokenFactory.sol      # EIP-1167 minimal proxy clone factory
 │   │   ├── PlayerMarket.sol            # Primary market: bonding curve + graduation → AMM
 │   │   ├── PlayerAMM.sol               # M7: Constant-product AMM (x*y=k) for graduated players
+│   │   ├── IndexVault.sol              # M10: Index/ETF — basket token per index, mint/redeem/NAV
 │   │   ├── PerformanceOracle.sol       # Oracle: push stats → distribute dividends
 │   │   ├── MockUSDT.sol                # Testnet ERC-20 + faucet
 │   │   └── libraries/
@@ -37,14 +38,16 @@ kickstock/
 │   │       └── KickTypes.sol           # Constants/errors/enums + graduation threshold
 │   ├── test/                           # Full test suite (unit + fuzz + fork)
 │   │   ├── Graduation.t.sol           # M7: 12 graduation tests
-│   │   └── PlayerAMM.t.sol            # M7: 21 AMM tests
+│   │   ├── PlayerAMM.t.sol            # M7: 21 AMM tests
+│   │   └── IndexVault.t.sol           # M10: 28 index mint/redeem/NAV/weight tests
 │   └── script/                         # Deployment & simulation scripts
 │       ├── Deploy.s.sol                # Full deployment + wiring
 │       ├── ListPlayers.s.sol           # Batch list 200 players
 │       ├── FundTraders.s.sol           # Fund burner wallets
 │       ├── SimulateTrading.s.sol       # Weighted-random trading sim
 │       ├── SimulateGraduation.s.sol    # M7: Graduation + AMM swap/LP simulation
-│       └── SimulateMatchday.s.sol      # M8: Matchday simulation (pushBatch → dividends)
+│       ├── SimulateMatchday.s.sol      # M8: Matchday simulation (pushBatch → dividends)
+│       └── SeedIndices.s.sol           # M10: Deploy IndexVault + define indices + demo mint/redeem
 ├── deployments/
 │   └── xlayer-testnet.json             # Deployed addresses + tx hashes
 ├── apps/
@@ -61,6 +64,8 @@ kickstock/
 │   │   │   ├── portfolio/layout.js     # M8: Portfolio OG metadata
 │   │   │   ├── leaderboard/page.js     # M8: 5-tab leaderboard
 │   │   │   ├── judge/page.js           # M8: Judge Mode — on-chain proof dashboard
+│   │   │   ├── indices/page.js         # M10: Index family listing (NAV, filter, components)
+│   │   │   ├── index/[id]/page.js      # M10: Index detail (weight table, NAV, mint/redeem)
 │   │   │   ├── api/og/route.js         # M8: Dynamic OG image generation (1200×630)
 │   │   │   └── api/okx-price/route.js  # OKX DEX HMAC proxy
 │   │   ├── components/                 # Navbar, TradePanel, SwapPanel, LPPanel, PriceChart,
@@ -83,7 +88,8 @@ kickstock/
 │   └── research/                       # AI research desk
 ├── packages/
 │   ├── config/players.config.js        # 200 star players across 48 teams
-│   └── abi/                            # Shared ABI (includes PlayerAMM)
+│   ├── config/indices.config.js        # M10: Index families (48 national, 4 position, 5 continental, 1 all-star)
+│   └── abi/                            # Shared ABI (includes PlayerAMM, IndexVault)
 ├── .github/workflows/ci.yml           # CI pipeline
 ├── turbo.json · pnpm-workspace.yaml
 └── README.md
@@ -360,8 +366,56 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
 - [x] **Navbar** — Added "Leaderboard" and "Judge" links
 - [x] **`next build` passing** — All 12 routes compile successfully
 
+### M10 — Index / ETF (IndexVault) ✅
+- [x] **`IndexVault.sol`** — M10 core contract: tokenized index baskets
+  - `IndexToken` — ERC-20 basket token per index (minted/burned by vault)
+  - `defineIndex(name, kind, components[], weightBps[])` — onlyOwner, validates Σweight==1e4
+  - `mint(indexId, units, maxTotal)` — buy components proportionally by weight
+    - Routes through bonding curve (un-graduated) or AMM swap (graduated) automatically
+    - Binary search share estimation for bonding curve path
+    - Aggregate slippage protection via `maxTotal`
+  - `redeem(indexId, units, minNet)` — sell components proportionally for USDT
+    - Pro-rata vault holdings based on basket share being redeemed
+    - Routes through same bonding curve / AMM routing as mint
+  - `nav(indexId)` — NAV per unit: component sell values weighted by vault holdings / total supply
+  - `componentValues(indexId)` — per-component breakdown (playerIds, values, balances)
+  - `deactivateIndex(indexId)` — disable minting, redeems still work
+  - 5 index kinds: NATIONAL, POSITION, CONTINENTAL, ALLSTAR, CUSTOM
+- [x] **`indices.config.js`** — Full index family definitions:
+  - 48 National Squad indices (one per qualified World Cup nation, equal-weighted within squad)
+  - 4 Position indices (FW / MF / DF / GK, top 20 players each)
+  - 5 Continental indices (AFC / CAF / CONCACAF / CONMEBOL / UEFA)
+  - 1 World Cup 500 All-Stars (top 20 global superstars, equal-weighted)
+  - `equalWeights(count)` helper for BPS distribution
+- [x] **`SeedIndices.s.sol`** — Deployment & demo script:
+  - Deploys IndexVault contract
+  - Defines 3 sample indices (Argentina National, FW Position, World Cup All-Stars)
+  - Demo: mints 1000 units of Argentina index, shows NAV, redeems 500 units
+  - Full console2 logging for verification
+- [x] **`IndexVault.t.sol`** — 28 tests:
+  - defineIndex: weight sum validation (=10000), overflow, underflow, zero weight, empty, mismatch
+  - defineIndex: unlisted player reverts, only owner, multiple indices, 4 components
+  - mint: single-component, multi-component weighted, zero units revert, inactive revert
+  - mint (graduated): AMM path for graduated players
+  - redeem: basic, partial, insufficient basket revert, zero revert
+  - redeem (graduated): AMM sell path
+  - NAV: zero supply returns 0, positive after mint, consistency check
+  - NAV (graduated): correct for AMM-priced components
+  - componentValues: per-component value breakdown after mint
+  - deactivateIndex: status change, only owner
+  - Index kinds: all 5 enum values
+- [x] **Frontend** — Index trading UI:
+  - `/indices` — Index family listing: filter tabs (All/National/Position/Continental/All-Star/Custom),
+    NAV per card, component count, fallback UI when vault not deployed
+  - `/index/[id]` — Index detail: component weight table with progress bars, NAV/unit,
+    total supply, user balance, mint panel (approve + buy) and redeem panel (sell)
+  - Navbar: Added "Indices" link
+- [x] **ABI package** — Added `IndexVault_ABI` + `IndexToken_ABI`
+- [x] **162 tests passing** (134 existing + 28 new IndexVault)
+- [x] **`next build` passing** — All 14 routes compile successfully
+
 ### Upcoming
-- [ ] M9+ — Tests, docs, indices, AI research, referral, etc.
+- [ ] M11+ — AI research desk, referral growth loop, etc.
 
 ## Player Roster
 
