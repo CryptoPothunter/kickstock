@@ -3,8 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'indexer dev placeholder'",
-    "build": "echo 'indexer build placeholder'",
-    "typecheck": "echo 'indexer typecheck placeholder'"
+    "dev": "node src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'no build step for plain JS'",
+    "typecheck": "echo 'no typecheck for plain JS'"
+  },
+  "dependencies": {
+    "@kickstock/abi": "workspace:*",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "viem": "^2.23.0"
   }
 }

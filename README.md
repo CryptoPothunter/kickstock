@@ -43,8 +43,23 @@ kickstock/
 ├── deployments/
 │   └── xlayer-testnet.json             # Deployed addresses + tx hashes
 ├── apps/
-│   ├── web/                            # Next.js 14 frontend
+│   ├── web/                            # Next.js 14 frontend (wagmi + RainbowKit)
+│   │   ├── app/                        # App Router pages
+│   │   │   ├── page.js                 # Home: hero + stats + top movers
+│   │   │   ├── market/page.js          # 200-player market grid
+│   │   │   ├── player/[id]/page.js     # Price chart + TradePanel
+│   │   │   ├── faucet/page.js          # mUSDT faucet
+│   │   │   ├── portfolio/page.js       # Holdings + dividend claims
+│   │   │   └── api/okx-price/route.js  # OKX DEX HMAC proxy
+│   │   ├── components/                 # Navbar, TradePanel, PriceChart, etc.
+│   │   └── lib/                        # chains, contracts, utils
 │   ├── indexer/                        # Event indexer + REST API
+│   │   └── src/
+│   │       ├── index.js                # Entry: indexer + API server
+│   │       ├── config.js               # Env + contract addresses
+│   │       ├── db.js                   # PostgreSQL schema + queries
+│   │       ├── indexer.js              # viem 5-block polling loop
+│   │       └── api.js                  # Express REST (:4000)
 │   ├── ticker/                         # X ticker bot
 │   └── research/                       # AI research desk
 ├── packages/
@@ -167,8 +182,40 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
 | PlayerMarket | `0xd98B4e5296c66aE56c55C5A4c1e9EB0DD512196f` |
 | PerformanceOracle | `0xF1277da9b1F4b7b72A3A16EC8C17a00Ce702C056` |
 
+### M6 — Indexer + REST + Frontend MVP ✅
+- [x] **Indexer** (`apps/indexer`) — viem-based event indexer with 5-block confirmation polling
+  - Subscribes to all contract events: PlayerListed, Bought, Sold, ReferralPaid, DividendFunded, DividendDistributed, ReferrerSet, StatPushed, DividendClaimed, Transfer
+  - PostgreSQL schema: 13 tables (indexer_state, players, trades, price_points, dividends, dividend_claims, holdings, lp_positions, referrals, referral_earnings, indices, research_snapshots, stats)
+  - Token registry: dynamically discovers PlayerToken clones from PlayerListed events
+  - Checkpoint persistence: resumes from last processed block on restart
+  - Batch processing: up to 2,000 blocks per poll cycle
+- [x] **REST API** (`:4000`) — Express.js with CORS, 10 aggregation endpoints:
+  - `GET /healthz` — health check with DB connectivity
+  - `GET /api/market` — all players with supply, reserve, price, volume, trade count
+  - `GET /api/player/:id` — single player detail
+  - `GET /api/player/:id/trades` — paginated trade history
+  - `GET /api/player/:id/price` — price point history (for charts)
+  - `GET /api/player/:id/dividends` — dividend distribution history
+  - `GET /api/portfolio/:address` — wallet holdings with player metadata
+  - `GET /api/leaderboard` — top 50 by market cap or volume
+  - `GET /api/stats` — global stats (volume, trades, dividends, unique traders)
+  - `GET /api/judge` — AI judge placeholder
+- [x] **Frontend** (`apps/web`) — Next.js 14 + wagmi v2 + viem v2 + RainbowKit
+  - OKX Wallet first-class citizen (Recommended, first position)
+  - Chain: X Layer Testnet (chainId 195)
+  - WalletConnect projectId integrated
+  - Dark trading-platform theme (Tailwind CSS)
+  - Pages:
+    - `/` — Hero + global stats + top movers
+    - `/market` — 200-player grid with search/filter/sort, fallback to on-chain reads
+    - `/player/[id]` — Price chart (SVG) + TradePanel (buy/sell with approve flow + 5% slippage) + trade history + dividends
+    - `/faucet` — Claim 1,000 mUSDT with balance display
+    - `/portfolio` — Holdings table + per-token dividend claim + total value
+  - OKX DEX Aggregator API: HMAC-SHA256 signed OKB/USDT quotes via `/api/okx-price` proxy route
+  - GasCostBadge component showing ≈$0.001 gas cost
+  - Graceful fallback: works without indexer via direct contract reads
+
 ### Upcoming
-- [ ] M6 — Indexer + REST + Frontend MVP
 - [ ] M7 — Graduation + AMM
 - [ ] M8+ — Completion, indices, AI research, referral, etc.
 
@@ -198,6 +245,16 @@ cd contracts
 forge build
 forge test -vvv
 forge coverage
+
+# Indexer (requires PostgreSQL)
+cp .env.example .env   # fill in DATABASE_URL
+cd apps/indexer
+node src/index.js       # starts indexer + REST API on :4000
+
+# Frontend
+cd apps/web
+cp .env.local.example .env.local  # fill in keys
+pnpm dev                # starts Next.js on :3000
 ```
 
 ## Testing & Security

@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f1118;
+  --bg-secondary: #151820;
+  --bg-tertiary: #1b1f2b;
+}
+
+body {
+  background: var(--bg-primary);
+  color: #e2e8f0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2d3748 transparent;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #00d26a, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

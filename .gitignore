@@ -5,6 +5,7 @@ out/
 cache/
 broadcast/
 lib/
+!apps/web/lib/
 dist/
 .next/
 *.log
