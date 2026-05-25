@@ -9,6 +9,8 @@ const navLinks = [
   { href: '/market', label: 'Market' },
   { href: '/ipo', label: 'IPO' },
   { href: '/portfolio', label: 'Portfolio' },
+  { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/judge', label: 'Judge' },
   { href: '/faucet', label: 'Faucet' },
 ]
 

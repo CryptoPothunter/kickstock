@@ -43,7 +43,8 @@ kickstock/
 │       ├── ListPlayers.s.sol           # Batch list 200 players
 │       ├── FundTraders.s.sol           # Fund burner wallets
 │       ├── SimulateTrading.s.sol       # Weighted-random trading sim
-│       └── SimulateGraduation.s.sol    # M7: Graduation + AMM swap/LP simulation
+│       ├── SimulateGraduation.s.sol    # M7: Graduation + AMM swap/LP simulation
+│       └── SimulateMatchday.s.sol      # M8: Matchday simulation (pushBatch → dividends)
 ├── deployments/
 │   └── xlayer-testnet.json             # Deployed addresses + tx hashes
 ├── apps/
@@ -51,22 +52,34 @@ kickstock/
 │   │   ├── app/                        # App Router pages
 │   │   │   ├── page.js                 # Home: hero + stats + top movers
 │   │   │   ├── market/page.js          # 200-player market grid
-│   │   │   ├── player/[id]/page.js     # Price chart + TradePanel + graduation + AMM swap
-│   │   │   ├── pool/[id]/page.js       # M7: AMM pool page (reserves/price/LP + swap/LP panels)
+│   │   │   ├── player/[id]/page.js     # Price chart + TradePanel + graduation + AMM swap + Share
+│   │   │   ├── player/[id]/layout.js   # M8: Dynamic OG metadata for player pages
+│   │   │   ├── pool/[id]/page.js       # M7: AMM pool page
 │   │   │   ├── ipo/page.js             # M7: IPO graduation progress page
 │   │   │   ├── faucet/page.js          # mUSDT faucet
-│   │   │   ├── portfolio/page.js       # Holdings + dividend claims
+│   │   │   ├── portfolio/page.js       # Holdings + dividend claims + Share
+│   │   │   ├── portfolio/layout.js     # M8: Portfolio OG metadata
+│   │   │   ├── leaderboard/page.js     # M8: 5-tab leaderboard
+│   │   │   ├── judge/page.js           # M8: Judge Mode — on-chain proof dashboard
+│   │   │   ├── api/og/route.js         # M8: Dynamic OG image generation (1200×630)
 │   │   │   └── api/okx-price/route.js  # OKX DEX HMAC proxy
-│   │   ├── components/                 # Navbar, TradePanel, SwapPanel, LPPanel, PriceChart
+│   │   ├── components/                 # Navbar, TradePanel, SwapPanel, LPPanel, PriceChart,
+│   │   │                               #   ShareOnX, OkLinkLink
 │   │   └── lib/                        # chains, contracts, utils
-│   ├── indexer/                        # Event indexer + REST API
+│   ├── indexer/                        # Event indexer + REST API (leaderboard, judge, AMM events)
 │   │   └── src/
 │   │       ├── index.js                # Entry: indexer + API server
 │   │       ├── config.js               # Env + contract addresses
 │   │       ├── db.js                   # PostgreSQL schema + queries
-│   │       ├── indexer.js              # viem 5-block polling loop
-│   │       └── api.js                  # Express REST (:4000)
-│   ├── ticker/                         # X ticker bot
+│   │       ├── indexer.js              # viem 5-block polling (+ Graduated/Swapped events)
+│   │       └── api.js                  # Express REST (:4000, 12+ endpoints)
+│   ├── ticker/                         # M8: X ticker bot (DRY_RUN, OAuth1.0a, 5-block reorg)
+│   │   └── src/
+│   │       ├── index.js                # Entry point + graceful shutdown
+│   │       ├── config.js               # Env + rate limits + contract addresses
+│   │       ├── twitter.js              # Zero-SDK OAuth1.0a HMAC-SHA1 posting
+│   │       ├── templates.js            # 8 tweet templates × 3 variants
+│   │       └── monitor.js              # Event polling + periodic tasks
 │   └── research/                       # AI research desk
 ├── packages/
 │   ├── config/players.config.js        # 200 star players across 48 teams
@@ -283,8 +296,72 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
   - Navbar: Added "IPO" link
 - [x] **134 tests passing** (101 existing + 12 Graduation + 21 PlayerAMM)
 
+### M8 — Completion Enhancement (Leaderboard / OG / Ticker / Judge) ✅
+- [x] **`/leaderboard`** — 5-tab leaderboard page:
+  - Gainers (24h price change %)
+  - Market Cap (supply × price)
+  - Whales (top holders by total value across all players)
+  - Dividends (most dividends distributed per player)
+  - Referrals (top referrers by earnings)
+  - Gold/silver/bronze rank styling, OKLink links per entry
+- [x] **Price curve charts** — Enhanced SVG PriceChart component:
+  - Y-axis price labels (5 ticks with dollar values)
+  - X-axis time labels (date/time from timestamps)
+  - Dashed grid lines
+  - Interactive crosshair on hover with tooltip (exact price + time)
+  - Improved 3-stop gradient fill
+  - Graceful "No price data" empty state
+- [x] **Dynamic OG cards** — `next/og` ImageResponse (1200×630):
+  - `/api/og?type=player&id=X` — Player name, country flag, price, 24h change, dividend pool
+  - `/api/og?type=portfolio&id=X` — Total holdings value, top 3 holdings, dividends claimed
+  - `/api/og?type=index&id=X` — Index name, NAV, component preview
+  - All cards include @KickStock branding + optional referral code
+  - Server-side metadata generation for player and portfolio pages
+- [x] **Share on X** — `ShareOnX` component on player and portfolio pages:
+  - Twitter intent URL with pre-filled text, URL, and `via=KickStock_XL`
+  - Opens in popup window
+  - X logo icon
+- [x] **`OkLinkLink` component** — Reusable OKLink explorer link:
+  - Transaction links (`/tx/{hash}`) and address links (`/address/{addr}`)
+  - Shortened display with external link icon
+  - Green styling consistent with verification theme
+- [x] **Ticker Bot** (`apps/ticker`) — Exchange ticker-voice X bot:
+  - **DRY_RUN=true** by default (safe mode, logs only)
+  - **X API v2 OAuth1.0a zero SDK** — manual HMAC-SHA1 signature, native `https` POST
+  - **5-block anti-reorg** confirmation delay before processing events
+  - **Rate limiting**: max 10 tweets per 15-minute window (sliding window)
+  - Templates (3 variants each, randomly selected):
+    - `PlayerListed` — "📈 NEW IPO: {player} {flag} listed at {price} mUSDT"
+    - `Graduated` — "🎓 GRADUATED: {player} hit liquidity threshold, now on AMM"
+    - Whale `Bought/Swap` (≥50 shares) — "🐋 WHALE: {shares} shares scooped"
+    - `DividendDistributed` — "💸 DIVIDEND! {player} scored — {amount} mUSDT paid out"
+    - Top 3 gainers (periodic, every 6h) — "🔥 TOP3: 🥇{A}+{x}% 🥈{B} 🥉{C}"
+    - Countdown (daily) — "⏳ {N} days to kickoff. Market cap leaders: ..."
+  - Each tweet includes OKLink proof link + `@XLayerOfficial #KickStock #XLayer`
+  - Event monitor: viem polling with state persistence (JSON file)
+- [x] **`SimulateMatchday.s.sol`** — Matchday simulation script:
+  - Simulates "Group Stage Day 1" with 3 matches, 18 stat entries, 13 unique players
+  - Argentina 2-1 France / Brazil 3-0 Germany / Spain 1-0 Italy
+  - Step 1: Funds dividend budgets (approve + fundDividends, 500 mUSDT each)
+  - Step 2: `oracle.pushBatch()` for all GOALs, ASSISTs, CLEAN_SHEETs, MOTMs
+  - Step 3: Verifies post-distribution budgets
+  - Full console2 logging for verification
+- [x] **`/judge` Judge Mode** — One-screen self-proof page:
+  - **Global on-chain metrics**: Total Volume, Trades, Graduated, Dividends Paid, Unique Addresses, Total Players
+  - **Contract registry**: All 5 deployed contracts with addresses (copy button), OKLink verification badges (✓ Verified / ⏳ Pending), explorer links
+  - **Live event stream**: Last 50 events from trades + dividends, color-coded type badges (Bought=green, Sold=red, Graduated=amber, Dividend=blue), each row links to OKLink tx
+  - **Copy Verification Script**: One-click copy of a bash script using `cast code` to verify all contracts on-chain
+  - Falls back to hardcoded contract addresses when indexer is unavailable
+- [x] **Indexer enhancements**:
+  - `GET /api/leaderboard?type=gainers|mcap|whales|dividends|referrals` with proper SQL queries
+  - `GET /api/judge` — Full judge mode aggregation (metrics + contracts + events + verify script)
+  - Graduated event handling — sets graduated flag, registers AMM address
+  - Swapped event handling — records AMM trades, updates prices and stats
+- [x] **Navbar** — Added "Leaderboard" and "Judge" links
+- [x] **`next build` passing** — All 12 routes compile successfully
+
 ### Upcoming
-- [ ] M8+ — Completion, indices, AI research, referral, etc.
+- [ ] M9+ — Tests, docs, indices, AI research, referral, etc.
 
 ## Player Roster
 
@@ -313,16 +390,28 @@ forge build
 forge test -vvv
 forge coverage
 
+# Deploy & Simulate (fill .env first)
+forge script script/Deploy.s.sol:Deploy --rpc-url $XLAYER_TESTNET_RPC --private-key $OPERATOR_PRIVATE_KEY --broadcast
+forge script script/ListPlayers.s.sol --rpc-url $XLAYER_TESTNET_RPC --private-key $OPERATOR_PRIVATE_KEY --broadcast
+forge script script/SimulateTrading.s.sol --rpc-url $XLAYER_TESTNET_RPC --private-key $OPERATOR_PRIVATE_KEY --broadcast
+forge script script/SimulateMatchday.s.sol:SimulateMatchday --rpc-url $XLAYER_TESTNET_RPC --private-key $OPERATOR_PRIVATE_KEY --broadcast
+
 # Indexer (requires PostgreSQL)
 cp .env.example .env   # fill in DATABASE_URL
 cd apps/indexer
 node src/index.js       # starts indexer + REST API on :4000
+
+# Ticker Bot (DRY_RUN=true by default)
+cd apps/ticker
+DRY_RUN=true node src/index.js
 
 # Frontend
 cd apps/web
 cp .env.local.example .env.local  # fill in keys
 pnpm dev                # starts Next.js on :3000
 ```
+
+Seed demos: `SimulateGraduation` (→ AMM), `SimulateMatchday` (→ dividends → claim), `SeedIndices` (→ ETFs), `SeedReferrals` (→ growth loop).
 
 ## Testing & Security
 

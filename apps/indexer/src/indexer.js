@@ -11,6 +11,7 @@ const { pool, getLastBlock, setLastBlock } = require("./db");
 const {
   PlayerMarket_ABI,
   PlayerToken_ABI,
+  PlayerAMM_ABI,
   PerformanceOracle_ABI,
 } = require("@kickstock/abi");
 
@@ -31,6 +32,9 @@ const TOKEN_EVENTS = PlayerToken_ABI.filter((s) => s.startsWith("event ")).map(
 const ORACLE_EVENTS = PerformanceOracle_ABI.filter((s) =>
   s.startsWith("event ")
 ).map((s) => parseAbiItem(s));
+const AMM_EVENTS = PlayerAMM_ABI.filter((s) => s.startsWith("event ")).map(
+  (s) => parseAbiItem(s)
+);
 
 // Build lookup maps: eventName -> parsed ABI item
 function buildEventMap(items) {
@@ -41,11 +45,13 @@ function buildEventMap(items) {
 const marketEventMap = buildEventMap(MARKET_EVENTS);
 const tokenEventMap = buildEventMap(TOKEN_EVENTS);
 const oracleEventMap = buildEventMap(ORACLE_EVENTS);
+const ammEventMap = buildEventMap(AMM_EVENTS);
 
 // Full ABI arrays (for decodeEventLog)
 const marketAbi = MARKET_EVENTS;
 const tokenAbi = TOKEN_EVENTS;
 const oracleAbi = ORACLE_EVENTS;
+const ammAbi = AMM_EVENTS;
 
 /* ── In-memory token address registry ────────────────────── */
 
@@ -53,6 +59,10 @@ const oracleAbi = ORACLE_EVENTS;
 const tokenRegistry = {};
 // tokenAddress (lowercase) -> playerId
 const tokenToPlayer = {};
+// ammAddress (lowercase) -> playerId
+const ammToPlayer = {};
+// playerId -> ammAddress (lowercase)
+const ammRegistry = {};
 
 async function loadTokenRegistry() {
   const { rows } = await pool.query(
@@ -273,6 +283,75 @@ async function handleTransfer(args, txHash, blockNumber, tokenAddress) {
   }
 }
 
+async function handleGraduated(args, txHash, blockNumber) {
+  const { playerId, amm, usdtSeeded, tokensSeeded } = args;
+  const pid = Number(playerId);
+  const ammAddr = amm.toLowerCase();
+
+  // Register the AMM address so we can track Swapped events
+  ammToPlayer[ammAddr] = pid;
+  ammRegistry[pid] = ammAddr;
+
+  await pool.query(
+    `UPDATE players SET graduated = true WHERE player_id = $1`,
+    [pid]
+  );
+  console.log(`[indexer] player ${pid} graduated -> AMM ${ammAddr}`);
+}
+
+async function handleSwapped(args, txHash, blockNumber, ammAddress) {
+  const { trader, usdtIn, amountIn, amountOut, fee, newReserveUsdt, newReserveToken } = args;
+  const playerId = ammToPlayer[ammAddress.toLowerCase()];
+  if (playerId == null) return;
+
+  const side = usdtIn ? "buy" : "sell";
+  const costOrProceeds = usdtIn ? amountIn.toString() : amountOut.toString();
+  const shares = usdtIn ? amountOut.toString() : amountIn.toString();
+
+  // Compute AMM price = reserveUsdt / reserveToken (in raw units)
+  const newPrice = newReserveToken > 0n
+    ? (newReserveUsdt * BigInt("1000000000000000000") / newReserveToken).toString()
+    : "0";
+
+  const c = await pool.connect();
+  try {
+    await c.query("BEGIN");
+
+    await c.query(
+      `INSERT INTO trades (player_id, trader, side, shares, cost_or_proceeds, fee, new_supply, tx_hash, block_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [playerId, trader.toLowerCase(), side, shares, costOrProceeds, fee.toString(), newReserveToken.toString(), txHash, blockNumber]
+    );
+
+    await c.query(
+      `UPDATE players SET price = $1 WHERE player_id = $2`,
+      [newPrice, playerId]
+    );
+
+    await c.query(
+      `INSERT INTO price_points (player_id, price, supply, block_number)
+       VALUES ($1, $2, $3, $4)`,
+      [playerId, newPrice, newReserveToken.toString(), blockNumber]
+    );
+
+    await c.query(
+      `UPDATE stats SET
+         total_volume = total_volume + $1,
+         total_trades = total_trades + 1,
+         updated_at = NOW()
+       WHERE id = 1`,
+      [costOrProceeds]
+    );
+
+    await c.query("COMMIT");
+  } catch (err) {
+    await c.query("ROLLBACK");
+    throw err;
+  } finally {
+    c.release();
+  }
+}
+
 /* ── Log processing ──────────────────────────────────────── */
 
 function tryDecode(abi, log) {
@@ -316,6 +395,9 @@ async function processLog(log) {
       case "ReferrerSet":
         await handleReferrerSet(args);
         break;
+      case "Graduated":
+        await handleGraduated(args, txHash, blockNumber);
+        break;
     }
     return;
   }
@@ -343,6 +425,17 @@ async function processLog(log) {
         await handleTransfer(decoded.args, txHash, blockNumber, logAddress);
         break;
     }
+    return;
+  }
+
+  // Try AMM events (any known AMM address)
+  if (ammToPlayer[logAddress] != null) {
+    const decoded = tryDecode(ammAbi, log);
+    if (!decoded) return;
+
+    if (decoded.eventName === "Swapped") {
+      await handleSwapped(decoded.args, txHash, blockNumber, logAddress);
+    }
   }
 }
 
@@ -361,10 +454,12 @@ async function pollOnce() {
 
   // Build the set of addresses to query
   const tokenAddresses = Object.values(tokenRegistry);
+  const ammAddresses = Object.values(ammRegistry);
   const addresses = [
     config.contracts.PlayerMarket,
     config.contracts.PerformanceOracle,
     ...tokenAddresses,
+    ...ammAddresses,
   ];
 
   const logs = await client.getLogs({

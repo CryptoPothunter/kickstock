@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'ticker dev placeholder'",
-    "build": "echo 'ticker build placeholder'",
-    "typecheck": "echo 'ticker typecheck placeholder'"
+    "dev": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
   }
 }

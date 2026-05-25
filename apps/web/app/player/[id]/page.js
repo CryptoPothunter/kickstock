@@ -7,6 +7,7 @@ import Link from 'next/link'
 import TradePanel from '@/components/TradePanel'
 import SwapPanel from '@/components/SwapPanel'
 import PriceChart from '@/components/PriceChart'
+import ShareOnX from '@/components/ShareOnX'
 import { ADDRESSES, ABIS, INDEXER_URL, GRADUATION_THRESHOLD } from '@/lib/contracts'
 import { formatUSDT, formatShares, countryFlag } from '@/lib/utils'
 
@@ -123,8 +124,16 @@ export default function PlayerPage({ params }) {
 
   const tokenAddress = playerInfo ? playerInfo[0] : null
 
+  const shareText = `Check out ${name} on KickStock! Price: $${formatUSDT(price)}`
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/player/${playerId}` : `/player/${playerId}`
+
   return (
     <div className="space-y-6">
+      {/* Share */}
+      <div className="flex justify-end">
+        <ShareOnX text={shareText} url={shareUrl} />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

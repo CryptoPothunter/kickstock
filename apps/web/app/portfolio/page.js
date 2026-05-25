@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import Link from 'next/link'
+import ShareOnX from '@/components/ShareOnX'
 import { ADDRESSES, ABIS, INDEXER_URL } from '@/lib/contracts'
 import { formatUSDT, formatShares } from '@/lib/utils'
 
@@ -40,6 +41,9 @@ export default function PortfolioPage() {
 
   const totalPending = holdings.reduce((sum, h) => sum + Number(h.pendingDividends || 0) / 1e18, 0)
 
+  const shareText = `My KickStock portfolio is worth $${totalValue.toFixed(2)} with $${totalPending.toFixed(2)} in pending dividends!`
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/portfolio` : '/portfolio'
+
   if (!isConnected) {
     return (
       <div className="text-center py-20">
@@ -51,7 +55,10 @@ export default function PortfolioPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Portfolio</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Portfolio</h1>
+        {holdings.length > 0 && <ShareOnX text={shareText} url={shareUrl} />}
+      </div>
 
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

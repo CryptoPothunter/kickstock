@@ -9,9 +9,11 @@ const {
 } = require('@kickstock/abi')
 
 export const ADDRESSES = {
-  PlayerMarket: process.env.NEXT_PUBLIC_PLAYER_MARKET,
-  MockUSDT: process.env.NEXT_PUBLIC_MOCK_USDT,
-  PerformanceOracle: process.env.NEXT_PUBLIC_PERFORMANCE_ORACLE,
+  MockUSDT: process.env.NEXT_PUBLIC_MOCK_USDT || '0x4F51c373145bdd8F3EFbD90f4c3409CC2f1Ea851',
+  PlayerTokenFactory: process.env.NEXT_PUBLIC_PLAYER_TOKEN_FACTORY || '0x8d2b077ca39CaAdBE6a659128943106e784D8BD7',
+  'PlayerToken (impl)': '0xA177d2c0669eD77FF2FED4e820412fB6b9643364',
+  PlayerMarket: process.env.NEXT_PUBLIC_PLAYER_MARKET || '0xd98B4e5296c66aE56c55C5A4c1e9EB0DD512196f',
+  PerformanceOracle: process.env.NEXT_PUBLIC_PERFORMANCE_ORACLE || '0xF1277da9b1F4b7b72A3A16EC8C17a00Ce702C056',
 }
 
 export const ABIS = {
