@@ -27,6 +27,7 @@ contract PlayerToken is ERC20 {
 
     // ── Access ─────────────────────────────────────────────────────
     address public market;
+    address public amm;   // M7: PlayerAMM — also authorized to call accrue
 
     // ── Dividend state ─────────────────────────────────────────────
     IERC20 public usdt;
@@ -82,6 +83,11 @@ contract PlayerToken is ERC20 {
         _;
     }
 
+    modifier onlyMarketOrAmm() {
+        if (msg.sender != market && msg.sender != amm) revert KickTypes.NotMarket();
+        _;
+    }
+
     // ── Mint / Burn (market only) ──────────────────────────────────
     function mintShares(address to, uint256 amount) external onlyMarket {
         _mint(to, amount);
@@ -97,7 +103,7 @@ contract PlayerToken is ERC20 {
     // ── Dividend: accrue ───────────────────────────────────────────
     /// @notice Bump accDivPerShare after USDT has been transferred to this contract.
     /// @param amount The USDT amount just transferred in.
-    function accrue(uint256 amount) external onlyMarket {
+    function accrue(uint256 amount) external onlyMarketOrAmm {
         if (eligibleSupply == 0) revert KickTypes.NoEligibleSupply(0);
         accDivPerShare += DividendMath.accDelta(amount, eligibleSupply);
         emit DividendAccrued(amount, accDivPerShare);
@@ -141,6 +147,11 @@ contract PlayerToken is ERC20 {
             rewardDebt[account] = DividendMath.accumulated(bal, accDivPerShare);
         }
         emit ExcludedSet(account, value);
+    }
+
+    /// @notice Set the AMM address that is also authorized to call accrue.
+    function setAmm(address amm_) external onlyMarket {
+        amm = amm_;
     }
 
     // ── Transfer hook (OZ v5) ──────────────────────────────────────

@@ -5,6 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {PlayerToken} from "./PlayerToken.sol";
 import {PlayerTokenFactory} from "./PlayerTokenFactory.sol";
+import {PlayerAMM} from "./PlayerAMM.sol";
 import {BondingCurve} from "./libraries/BondingCurve.sol";
 import {KickTypes} from "./libraries/KickTypes.sol";
 
@@ -41,6 +42,10 @@ contract PlayerMarket is Ownable {
     mapping(uint256 => PlayerInfo) public players;
     uint256[] public listedPlayerIds;
 
+    // ── M7: Graduation + AMM ─────────────────────────────────────
+    mapping(uint256 => bool) public graduated;
+    mapping(uint256 => address) public playerAmm;  // playerId → PlayerAMM address
+
     // ── Referral tracking ─────────────────────────────────────────
     mapping(address => address) public referrer;
 
@@ -72,6 +77,7 @@ contract PlayerMarket is Ownable {
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
     event ReferrerSet(address indexed user, address indexed ref);
+    event Graduated(uint256 indexed playerId, address amm, uint256 usdtSeeded, uint256 tokensSeeded);
 
     // ── Constructor ───────────────────────────────────────────────
     constructor(address usdt_, address factory_) Ownable(msg.sender) {
@@ -160,6 +166,7 @@ contract PlayerMarket is Ownable {
     /// @param maxTotal Maximum USDT the buyer is willing to pay (slippage protection).
     function buy(uint256 playerId, uint256 shares, uint256 maxTotal) external {
         _requireListed(playerId);
+        _requireNotGraduated(playerId);
         if (shares == 0) revert KickTypes.ZeroAmount();
 
         PlayerInfo storage info = players[playerId];
@@ -194,6 +201,7 @@ contract PlayerMarket is Ownable {
     /// @param minNet Minimum USDT the seller expects to receive (slippage protection).
     function sell(uint256 playerId, uint256 shares, uint256 minNet) external {
         _requireListed(playerId);
+        _requireNotGraduated(playerId);
         if (shares == 0) revert KickTypes.ZeroAmount();
 
         PlayerInfo storage info = players[playerId];
@@ -277,6 +285,73 @@ contract PlayerMarket is Ownable {
         players[playerId].dividendBudget += amount;
 
         emit DividendFunded(playerId, amount);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ██  M7: GRADUATION → AMM
+    // ═══════════════════════════════════════════════════════════════
+
+    /// @notice Graduate a player from bonding curve to AMM when reserve ≥ GRADUATION_THRESHOLD.
+    ///         Anyone can trigger. Uses the reserve USDT + mints equivalent PlayerToken at current
+    ///         curve price to seed the AMM. Excludes AMM from dividends, closes primary buy/sell.
+    /// @param playerId The player to graduate.
+    function graduate(uint256 playerId) external {
+        _requireListed(playerId);
+        if (graduated[playerId]) revert KickTypes.AlreadyGraduated(playerId);
+
+        PlayerInfo storage info = players[playerId];
+        if (info.reserve < KickTypes.GRADUATION_THRESHOLD) {
+            revert KickTypes.BelowGraduationThreshold(playerId, info.reserve);
+        }
+
+        // Mark graduated (closes bonding curve buy/sell)
+        graduated[playerId] = true;
+
+        // --- Seed amounts ---
+        uint256 usdtSeed = info.reserve;
+        // Mint tokens at current curve price: tokenSeed = reserve / currentPrice * SHARE_UNIT
+        // currentPrice = curveBase + curveSlope * supply
+        uint256 curPrice = BondingCurve.priceAt(info.supply, curveBase, curveSlope);
+        uint256 tokenSeed = (usdtSeed * KickTypes.SHARE_UNIT) / curPrice;
+
+        // Drain reserve from bonding curve
+        info.reserve = 0;
+
+        // Deploy AMM
+        PlayerAMM amm = new PlayerAMM();
+        playerAmm[playerId] = address(amm);
+
+        // Mint seed tokens to this contract (for AMM seeding)
+        PlayerToken token = PlayerToken(info.token);
+        token.mintShares(address(this), tokenSeed);
+
+        // Approve AMM to pull both USDT and PlayerToken
+        _approveToken(address(usdt), address(amm), usdtSeed);
+        _approveToken(info.token, address(amm), tokenSeed);
+
+        // Initialize AMM with seed liquidity
+        amm.initialize(address(usdt), info.token, address(this), usdtSeed, tokenSeed);
+
+        // Exclude AMM from dividends (pool tokens don't earn dividends)
+        token.setExcluded(address(amm), true);
+
+        // Set AMM as authorized accrue caller on PlayerToken
+        token.setAmm(address(amm));
+
+        emit Graduated(playerId, address(amm), usdtSeed, tokenSeed);
+    }
+
+    /// @notice Check if a player is eligible for graduation.
+    function canGraduate(uint256 playerId) external view returns (bool) {
+        if (players[playerId].token == address(0)) return false;
+        if (graduated[playerId]) return false;
+        return players[playerId].reserve >= KickTypes.GRADUATION_THRESHOLD;
+    }
+
+    /// @notice Get graduation progress (reserve / threshold) as BPS (0–10000+).
+    function graduationProgress(uint256 playerId) external view returns (uint256 progressBps) {
+        _requireListed(playerId);
+        progressBps = (players[playerId].reserve * KickTypes.BPS) / KickTypes.GRADUATION_THRESHOLD;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -369,6 +444,19 @@ contract PlayerMarket is Ownable {
 
     function _requireListed(uint256 playerId) internal view {
         if (players[playerId].token == address(0)) revert KickTypes.PlayerNotListed(playerId);
+    }
+
+    function _requireNotGraduated(uint256 playerId) internal view {
+        if (graduated[playerId]) revert KickTypes.AlreadyGraduated(playerId);
+    }
+
+    function _approveToken(address token, address spender, uint256 amount) internal {
+        (bool success, bytes memory data) = token.call(
+            abi.encodeWithSelector(IERC20.approve.selector, spender, amount)
+        );
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) {
+            revert KickTypes.TransferFailed();
+        }
     }
 
     function _safeTransferFrom(address from, address to, uint256 amount) internal {
