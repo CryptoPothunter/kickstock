@@ -42,7 +42,7 @@ kickstock/
 │   ├── ticker/                         # X ticker bot
 │   └── research/                       # AI research desk
 ├── packages/
-│   ├── config/players.config.js        # 150 star players across 48 teams
+│   ├── config/players.config.js        # 200 star players across 48 teams
 │   └── abi/                            # Shared ABI
 ├── .github/workflows/ci.yml           # CI pipeline
 ├── turbo.json · pnpm-workspace.yaml
@@ -133,7 +133,7 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
 
 ## Player Roster
 
-150 star players across all **48 projected qualified nations** for the 2026 FIFA World Cup. See `packages/config/players.config.js`.
+200 star players across all **48 projected qualified nations** for the 2026 FIFA World Cup. See `packages/config/players.config.js`.
 
 - **Hosts**: USA, Mexico, Canada
 - **UEFA (16)**: France, England, Spain, Germany, Netherlands, Portugal, Belgium, Croatia, Italy, Switzerland, Denmark, Poland, Austria, Turkey, Serbia, Ukraine
@@ -143,7 +143,7 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
 - **CONCACAF (3 non-host)**: Panama, Costa Rica, Jamaica
 - **Play-off / Additional**: Norway, Sweden, Scotland
 
-**Position distribution**: 69 FW / 54 MF / 17 DF / 10 GK — star-heavy roster optimized for trading interest.
+**Position distribution**: ~85 FW / 65 MF / 30 DF / 10 GK — star-heavy roster optimized for trading interest (200 players total, expanded from initial 150).
 
 Includes helpers: `COUNTRIES`, `PLAYER_BY_ID`, `PLAYERS_BY_COUNTRY` for programmatic access.
 

@@ -258,6 +258,129 @@ const PLAYERS = [
   { id: 148, name: "Andrew Robertson",    code: "ROBERTSON",  country: 48, countryCode: "SCO", countryName: "Scotland",       position: "DF" },
   { id: 149, name: "Scott McTominay",     code: "MCTOMINAY",  country: 48, countryCode: "SCO", countryName: "Scotland",       position: "MF" },
   { id: 150, name: "John McGinn",         code: "MCGINN",     country: 48, countryCode: "SCO", countryName: "Scotland",       position: "MF" },
+
+  // ─── Additional Stars (151–200) ─────────────────────────────
+  // Argentina
+  { id: 151, name: "Lautaro Martinez",   code: "LAUTARO",    country: 1,  countryCode: "ARG", countryName: "Argentina",      position: "FW" },
+  { id: 152, name: "Nahuel Molina",      code: "NMOLINA",    country: 1,  countryCode: "ARG", countryName: "Argentina",      position: "DF" },
+
+  // Brazil
+  { id: 153, name: "Raphinha",           code: "RAPHINHA",   country: 2,  countryCode: "BRA", countryName: "Brazil",         position: "FW" },
+  { id: 154, name: "Marquinhos",         code: "MARQUINHOS", country: 2,  countryCode: "BRA", countryName: "Brazil",         position: "DF" },
+
+  // France
+  { id: 155, name: "Ousmane Dembele",    code: "DEMBELE",    country: 3,  countryCode: "FRA", countryName: "France",         position: "FW" },
+  { id: 156, name: "Eduardo Camavinga",  code: "CAMAVINGA",  country: 3,  countryCode: "FRA", countryName: "France",         position: "MF" },
+  { id: 157, name: "Randal Kolo Muani",  code: "KOLOMUANI",  country: 3,  countryCode: "FRA", countryName: "France",         position: "FW" },
+
+  // England
+  { id: 158, name: "Cole Palmer",        code: "PALMER",     country: 4,  countryCode: "ENG", countryName: "England",        position: "MF" },
+  { id: 159, name: "Kobbie Mainoo",      code: "MAINOO",     country: 4,  countryCode: "ENG", countryName: "England",        position: "MF" },
+
+  // Spain
+  { id: 160, name: "Nico Williams",      code: "NWILLIAMS",  country: 5,  countryCode: "ESP", countryName: "Spain",          position: "FW" },
+  { id: 161, name: "Dani Olmo",          code: "DOLMO",      country: 5,  countryCode: "ESP", countryName: "Spain",          position: "MF" },
+
+  // Germany
+  { id: 162, name: "Leroy Sane",         code: "SANE",       country: 6,  countryCode: "GER", countryName: "Germany",        position: "FW" },
+  { id: 163, name: "Joshua Kimmich",     code: "KIMMICH",    country: 6,  countryCode: "GER", countryName: "Germany",        position: "MF" },
+
+  // Netherlands
+  { id: 164, name: "Memphis Depay",      code: "DEPAY",      country: 7,  countryCode: "NED", countryName: "Netherlands",    position: "FW" },
+
+  // Portugal
+  { id: 165, name: "Ruben Dias",         code: "RDIAS",      country: 8,  countryCode: "POR", countryName: "Portugal",       position: "DF" },
+  { id: 166, name: "Diogo Jota",         code: "DJOTA",      country: 8,  countryCode: "POR", countryName: "Portugal",       position: "FW" },
+
+  // Italy
+  { id: 167, name: "Gianluca Scamacca",  code: "SCAMACCA",   country: 11, countryCode: "ITA", countryName: "Italy",          position: "FW" },
+  { id: 168, name: "Sandro Tonali",      code: "TONALI",     country: 11, countryCode: "ITA", countryName: "Italy",          position: "MF" },
+
+  // Uruguay
+  { id: 169, name: "Luis Suarez",        code: "SUAREZ",     country: 12, countryCode: "URU", countryName: "Uruguay",        position: "FW" },
+
+  // Colombia
+  { id: 170, name: "Richard Rios",       code: "RRIOS",      country: 13, countryCode: "COL", countryName: "Colombia",       position: "MF" },
+
+  // Japan
+  { id: 171, name: "Daichi Kamada",      code: "KAMADA",     country: 14, countryCode: "JPN", countryName: "Japan",          position: "MF" },
+  { id: 172, name: "Ritsu Doan",         code: "DOAN",       country: 14, countryCode: "JPN", countryName: "Japan",          position: "FW" },
+
+  // USA
+  { id: 173, name: "Folarin Balogun",    code: "BALOGUN",    country: 16, countryCode: "USA", countryName: "USA",            position: "FW" },
+  { id: 174, name: "Sergino Dest",       code: "DEST",       country: 16, countryCode: "USA", countryName: "USA",            position: "DF" },
+
+  // Mexico
+  { id: 175, name: "Alexis Vega",        code: "AVEGA",      country: 17, countryCode: "MEX", countryName: "Mexico",         position: "FW" },
+
+  // Morocco
+  { id: 176, name: "Azzedine Ounahi",    code: "OUNAHI",     country: 19, countryCode: "MAR", countryName: "Morocco",        position: "MF" },
+  { id: 177, name: "Noussair Mazraoui",  code: "MAZRAOUI",   country: 19, countryCode: "MAR", countryName: "Morocco",        position: "DF" },
+
+  // Senegal
+  { id: 178, name: "Nicolas Jackson",    code: "NJACKSON",   country: 20, countryCode: "SEN", countryName: "Senegal",        position: "FW" },
+
+  // Nigeria
+  { id: 179, name: "Ademola Lookman",    code: "LOOKMAN",    country: 21, countryCode: "NGA", countryName: "Nigeria",        position: "FW" },
+  { id: 180, name: "Alex Iwobi",         code: "IWOBI",      country: 21, countryCode: "NGA", countryName: "Nigeria",        position: "MF" },
+
+  // Egypt
+  { id: 181, name: "Mostafa Mohamed",    code: "MMOHAMED",   country: 22, countryCode: "EGY", countryName: "Egypt",          position: "FW" },
+
+  // Ivory Coast
+  { id: 182, name: "Ibrahim Sangare",    code: "SANGARE",    country: 24, countryCode: "CIV", countryName: "Ivory Coast",    position: "MF" },
+
+  // South Korea
+  { id: 183, name: "Hwang Hee-chan",     code: "HWANG",      country: 15, countryCode: "KOR", countryName: "South Korea",    position: "FW" },
+
+  // Saudi Arabia
+  { id: 184, name: "Mohammed Kanno",     code: "KANNO",      country: 28, countryCode: "KSA", countryName: "Saudi Arabia",   position: "MF" },
+
+  // Australia
+  { id: 185, name: "Mitchell Duke",      code: "DUKE",       country: 30, countryCode: "AUS", countryName: "Australia",      position: "FW" },
+
+  // Switzerland
+  { id: 186, name: "Ruben Vargas",       code: "RVARGAS",    country: 34, countryCode: "SUI", countryName: "Switzerland",    position: "FW" },
+
+  // Denmark
+  { id: 187, name: "Jonas Wind",         code: "WIND",       country: 35, countryCode: "DEN", countryName: "Denmark",        position: "FW" },
+
+  // Turkey
+  { id: 188, name: "Yusuf Yazici",       code: "YAZICI",     country: 38, countryCode: "TUR", countryName: "Turkey",         position: "FW" },
+
+  // Croatia
+  { id: 189, name: "Andrej Kramaric",    code: "KRAMARIC",   country: 10, countryCode: "CRO", countryName: "Croatia",        position: "FW" },
+
+  // Belgium
+  { id: 190, name: "Jeremy Doku",        code: "DOKU",       country: 9,  countryCode: "BEL", countryName: "Belgium",        position: "FW" },
+  { id: 191, name: "Amadou Onana",       code: "ONANA",      country: 9,  countryCode: "BEL", countryName: "Belgium",        position: "MF" },
+
+  // Poland
+  { id: 192, name: "Nicola Zalewski",    code: "ZALEWSKI",   country: 36, countryCode: "POL", countryName: "Poland",         position: "MF" },
+
+  // Austria
+  { id: 193, name: "Christoph Baumgartner", code: "BAUMGART", country: 37, countryCode: "AUT", countryName: "Austria",       position: "MF" },
+
+  // Serbia
+  { id: 194, name: "Filip Kostic",       code: "KOSTIC",     country: 39, countryCode: "SRB", countryName: "Serbia",         position: "MF" },
+
+  // Ecuador
+  { id: 195, name: "Jeremy Sarmiento",   code: "JSARMIENTO", country: 41, countryCode: "ECU", countryName: "Ecuador",        position: "FW" },
+
+  // Norway
+  { id: 196, name: "Alexander Sorloth",  code: "SORLOTH",    country: 46, countryCode: "NOR", countryName: "Norway",         position: "FW" },
+
+  // Sweden
+  { id: 197, name: "Emil Forsberg",      code: "FORSBERG",   country: 47, countryCode: "SWE", countryName: "Sweden",         position: "MF" },
+
+  // Ghana
+  { id: 198, name: "Antoine Semenyo",    code: "SEMENYO",    country: 26, countryCode: "GHA", countryName: "Ghana",          position: "FW" },
+
+  // Canada
+  { id: 199, name: "Cyle Larin",         code: "LARIN",      country: 18, countryCode: "CAN", countryName: "Canada",         position: "FW" },
+
+  // Iran
+  { id: 200, name: "Saman Ghoddos",     code: "GHODDOS",    country: 29, countryCode: "IRN", countryName: "Iran",           position: "MF" },
 ];
 
 // ─── Derived helpers ──────────────────────────────────────────
