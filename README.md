@@ -27,19 +27,23 @@ kickstock/
 │   ├── src/
 │   │   ├── PlayerToken.sol             # Per-player ERC-20 with built-in dividend accumulator
 │   │   ├── PlayerTokenFactory.sol      # EIP-1167 minimal proxy clone factory
-│   │   ├── PlayerMarket.sol             # Primary market: bonding curve buy/sell + fee split
+│   │   ├── PlayerMarket.sol            # Primary market: bonding curve + graduation → AMM
+│   │   ├── PlayerAMM.sol               # M7: Constant-product AMM (x*y=k) for graduated players
 │   │   ├── PerformanceOracle.sol       # Oracle: push stats → distribute dividends
 │   │   ├── MockUSDT.sol                # Testnet ERC-20 + faucet
 │   │   └── libraries/
 │   │       ├── BondingCurve.sol        # Pure function curve math
 │   │       ├── DividendMath.sol        # Accumulator pure functions
-│   │       └── KickTypes.sol           # Constants/errors/enums
+│   │       └── KickTypes.sol           # Constants/errors/enums + graduation threshold
 │   ├── test/                           # Full test suite (unit + fuzz + fork)
+│   │   ├── Graduation.t.sol           # M7: 12 graduation tests
+│   │   └── PlayerAMM.t.sol            # M7: 21 AMM tests
 │   └── script/                         # Deployment & simulation scripts
 │       ├── Deploy.s.sol                # Full deployment + wiring
 │       ├── ListPlayers.s.sol           # Batch list 200 players
 │       ├── FundTraders.s.sol           # Fund burner wallets
-│       └── SimulateTrading.s.sol       # Weighted-random trading sim
+│       ├── SimulateTrading.s.sol       # Weighted-random trading sim
+│       └── SimulateGraduation.s.sol    # M7: Graduation + AMM swap/LP simulation
 ├── deployments/
 │   └── xlayer-testnet.json             # Deployed addresses + tx hashes
 ├── apps/
@@ -47,11 +51,13 @@ kickstock/
 │   │   ├── app/                        # App Router pages
 │   │   │   ├── page.js                 # Home: hero + stats + top movers
 │   │   │   ├── market/page.js          # 200-player market grid
-│   │   │   ├── player/[id]/page.js     # Price chart + TradePanel
+│   │   │   ├── player/[id]/page.js     # Price chart + TradePanel + graduation + AMM swap
+│   │   │   ├── pool/[id]/page.js       # M7: AMM pool page (reserves/price/LP + swap/LP panels)
+│   │   │   ├── ipo/page.js             # M7: IPO graduation progress page
 │   │   │   ├── faucet/page.js          # mUSDT faucet
 │   │   │   ├── portfolio/page.js       # Holdings + dividend claims
 │   │   │   └── api/okx-price/route.js  # OKX DEX HMAC proxy
-│   │   ├── components/                 # Navbar, TradePanel, PriceChart, etc.
+│   │   ├── components/                 # Navbar, TradePanel, SwapPanel, LPPanel, PriceChart
 │   │   └── lib/                        # chains, contracts, utils
 │   ├── indexer/                        # Event indexer + REST API
 │   │   └── src/
@@ -64,7 +70,7 @@ kickstock/
 │   └── research/                       # AI research desk
 ├── packages/
 │   ├── config/players.config.js        # 200 star players across 48 teams
-│   └── abi/                            # Shared ABI
+│   └── abi/                            # Shared ABI (includes PlayerAMM)
 ├── .github/workflows/ci.yml           # CI pipeline
 ├── turbo.json · pnpm-workspace.yaml
 └── README.md
@@ -215,8 +221,69 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
   - GasCostBadge component showing ≈$0.001 gas cost
   - Graceful fallback: works without indexer via direct contract reads
 
+### M7 — Graduation + AMM (Secondary Market) ✅
+- [x] **`PlayerAMM.sol`** — Constant-product AMM (x*y=k) for USDT/PlayerToken pairs
+  - `initialize(usdt, token, market, usdtAmount, tokenAmount)` — Seed with graduation liquidity
+  - `swapUsdtForShares(usdtIn, minOut)` / `swapSharesForUsdt(tokenIn, minOut)` — Swap with 1% fee
+  - `addLiquidity(usdtAmount, minLp)` — Proportional LP mint
+  - `removeLiquidity(lpAmount, minUsdt, minToken)` — LP burn with proportional withdraw
+  - Fee distribution: 60% LP (stays in pool) / 30% dividend (PlayerToken.accrue) / 10% protocol
+  - Minimum liquidity lock: 1,000 units sent to dead address on initialization
+  - LP tokens are ERC-20 (`KSLP`) — transferable, composable
+  - `price()` / `getK()` view helpers
+- [x] **`PlayerMarket.graduate(playerId)`** — Graduation trigger
+  - Anyone can call when `reserve >= GRADUATION_THRESHOLD` (50,000 mUSDT)
+  - Drains bonding curve reserve + mints tokens at current curve price
+  - Deploys new PlayerAMM, seeds with USDT + PlayerToken
+  - `setExcluded(amm, true)` — Pool tokens excluded from dividends
+  - `setAmm(amm)` — Authorizes AMM to call `PlayerToken.accrue` for dividend fee routing
+  - Closes bonding curve `buy()`/`sell()` for graduated players (`AlreadyGraduated` revert)
+  - `canGraduate(playerId)` / `graduationProgress(playerId)` view helpers
+- [x] **`PlayerToken.sol`** — Updated with AMM authorization
+  - `amm` field + `setAmm(address)` (market-only)
+  - `onlyMarketOrAmm` modifier on `accrue()` — allows both market and AMM to distribute dividends
+- [x] **`KickTypes.sol`** — New constants
+  - `GRADUATION_THRESHOLD = 50,000e18` mUSDT
+  - `AMM_FEE_BPS = 100` (1% swap fee)
+  - `AMM_LP_BPS = 6,000` / `AMM_DIV_BPS = 3,000` / `AMM_PROTO_BPS = 1,000`
+  - `MINIMUM_LIQUIDITY = 1,000`
+  - New errors: `BelowGraduationThreshold`, `InsufficientLiquidity`, `AlreadyInitialized`, `NotInitialized`, `InvariantViolation`
+- [x] **`SimulateGraduation.s.sol`** — Graduation simulation script
+  - Concentrated buys push 5 superstars (Messi, Lautaro, Neymar, Vinicius, Mbappe) past threshold
+  - Triggers graduation → AMM creation
+  - Post-graduation: USDT→Token swap, Token→USDT swap, addLiquidity demonstration
+- [x] **`Graduation.t.sol`** — 12 tests:
+  - Below-threshold revert
+  - At-threshold graduation success
+  - Anyone can trigger (permissionless)
+  - Cannot graduate twice
+  - Seed ratio matches current curve price
+  - AMM excluded from dividends
+  - Bonding curve buy/sell closed after graduation
+  - Reserve drained to zero
+  - Graduation progress tracking
+  - Post-graduation AMM swap functional
+  - Fuzz: token supply consistency across graduation
+- [x] **`PlayerAMM.t.sol`** — 21 tests:
+  - Initialization + minimum liquidity locked
+  - USDT→Token and Token→USDT swap mechanics
+  - Constant product: x*y >= k after every swap (fee increases k)
+  - Slippage protection on all operations
+  - LP add/remove proportionality
+  - Fee distribution: LP stays in pool, dividend accrues, protocol accumulates
+  - Roundtrip swap always loses to fees
+  - Protocol fee withdrawal access control
+  - Fuzz: constant product invariant (1000 runs each direction)
+- [x] **Frontend** — AMM trading UI
+  - `SwapPanel.js` — Buy/sell tokens via AMM with estimated output, fee display, approval flow
+  - `LPPanel.js` — Add/remove liquidity with proportional token calculation
+  - `/pool/[id]` — AMM pool page: reserves, price, k-value, LP supply, contract address + swap/LP panels
+  - `/ipo` — IPO graduation progress: progress bars (reserve/threshold), how-it-works guide, early-bird cost, filter tabs
+  - `/player/[id]` — Updated: graduation progress bar, "Trigger Graduation" button, SwapPanel for graduated players, pool link
+  - Navbar: Added "IPO" link
+- [x] **134 tests passing** (101 existing + 12 Graduation + 21 PlayerAMM)
+
 ### Upcoming
-- [ ] M7 — Graduation + AMM
 - [ ] M8+ — Completion, indices, AI research, referral, etc.
 
 ## Player Roster
