@@ -34,8 +34,14 @@ kickstock/
 │   │       ├── BondingCurve.sol        # Pure function curve math
 │   │       ├── DividendMath.sol        # Accumulator pure functions
 │   │       └── KickTypes.sol           # Constants/errors/enums
-│   ├── test/                           # Full test suite (unit + fuzz)
+│   ├── test/                           # Full test suite (unit + fuzz + fork)
 │   └── script/                         # Deployment & simulation scripts
+│       ├── Deploy.s.sol                # Full deployment + wiring
+│       ├── ListPlayers.s.sol           # Batch list 200 players
+│       ├── FundTraders.s.sol           # Fund burner wallets
+│       └── SimulateTrading.s.sol       # Weighted-random trading sim
+├── deployments/
+│   └── xlayer-testnet.json             # Deployed addresses + tx hashes
 ├── apps/
 │   ├── web/                            # Next.js 14 frontend
 │   ├── indexer/                        # Event indexer + REST API
@@ -125,8 +131,43 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
   - Fuzz: dividend conservation across varying holder counts
 - [x] **101 tests passing** across all 6 test suites
 
+### M5 — Deploy + List + Simulate Trading (On-Chain Milestone) ✅
+- [x] `Deploy.s.sol` — Full contract suite deployment + wiring
+  - MockUSDT → PlayerTokenFactory → PlayerMarket → PerformanceOracle
+  - market.setOracle(oracle) wiring
+  - Writes `deployments/xlayer-testnet.json` with all addresses
+- [x] `ListPlayers.s.sol` — Batch list all 200 star players
+  - 4 batches of 50 players for gas safety
+  - All players from `players.config.js` with `KickStock {Name}` / `K{CODE}` naming
+- [x] `FundTraders.s.sol` — Generate 20 deterministic burner wallets
+  - Mint 10,000 mUSDT per burner + 0.01 OKB gas each
+  - Deterministic keys: `keccak256("kickstock-burner", i)`
+- [x] `SimulateTrading.s.sol` — Weighted-random trading simulation
+  - 20 burners × 15 rounds = 250+ Bought/Sold events
+  - Weighted player selection: superstars (3×), stars (2×), regular (1×)
+  - ~40% sell probability per round
+- [x] `KickStockFork.t.sol` — Fork test against live testnet
+  - Bytecode verification (all contracts have code)
+  - Wiring verification (oracle↔market, market↔factory↔usdt)
+  - Full flow: faucet → approve → buy → sell → claim
+  - Reserve invariant on live state
+  - Monetary conservation on live state
+  - Oracle distribute end-to-end
+- [x] X Layer Testnet deployment (chainId 195) — all contracts live
+- [x] OKLink source code verification — all 5 contracts verified
+- [x] **101 unit tests + 8 fork tests passing**
+
+#### Deployed Contracts (X Layer Testnet)
+
+| Contract | Address |
+|---|---|
+| MockUSDT | `0x4F51c373145bdd8F3EFbD90f4c3409CC2f1Ea851` |
+| PlayerTokenFactory | `0x8d2b077ca39CaAdBE6a659128943106e784D8BD7` |
+| PlayerToken (impl) | `0xA177d2c0669eD77FF2FED4e820412fB6b9643364` |
+| PlayerMarket | `0xd98B4e5296c66aE56c55C5A4c1e9EB0DD512196f` |
+| PerformanceOracle | `0xF1277da9b1F4b7b72A3A16EC8C17a00Ce702C056` |
+
 ### Upcoming
-- [ ] M5 — Deploy to X Layer Testnet + OKLink verification
 - [ ] M6 — Indexer + REST + Frontend MVP
 - [ ] M7 — Graduation + AMM
 - [ ] M8+ — Completion, indices, AI research, referral, etc.

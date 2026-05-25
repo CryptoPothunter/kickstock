@@ -1,0 +1,39 @@
+{
+  "network": "xlayer-testnet",
+  "chainId": 195,
+  "deployer": "0xd247daedD814C471537067452ED440f74C36f4D1",
+  "contracts": {
+    "MockUSDT": "0x4F51c373145bdd8F3EFbD90f4c3409CC2f1Ea851",
+    "PlayerTokenFactory": "0x8d2b077ca39CaAdBE6a659128943106e784D8BD7",
+    "PlayerToken_implementation": "0xA177d2c0669eD77FF2FED4e820412fB6b9643364",
+    "PlayerMarket": "0xd98B4e5296c66aE56c55C5A4c1e9EB0DD512196f",
+    "PerformanceOracle": "0xF1277da9b1F4b7b72A3A16EC8C17a00Ce702C056"
+  },
+  "params": {
+    "curveBase": "100000000000000000000",
+    "curveSlope": "10000000000000000000",
+    "feeBps": 300,
+    "referralBps": 3000,
+    "divShareBps": 5000
+  },
+  "deployedAt": "2026-05-25",
+  "txHashes": {
+    "deploy_MockUSDT": "0x0b123dc6f74b29d19fdf96deddadb947d07efc9b550326f2b7a2080a38fe6e03",
+    "deploy_PlayerTokenFactory": "0xa3e7162e94debf74d582c9922138a104c828e05e18ad518df4ac85e97bef241c",
+    "deploy_PlayerMarket": "0x8f1aafe44907ab14f72d0a710061e04deb8929de93eead70a7ad71a55e9a74f5",
+    "deploy_PerformanceOracle": "0x58ba69fe8bbdb03863e98d6cbc710c295cfe19307f74ae0136592ec1f6bcbd4d",
+    "wire_setOracle": "0x4e5344dc697ed2e11f9c7d9373669709157b6e6f9665584af6370ba8ca3bdd4f"
+  },
+  "verification": {
+    "MockUSDT": "submitted",
+    "PlayerTokenFactory": "submitted",
+    "PlayerToken_implementation": "submitted",
+    "PlayerMarket": "submitted",
+    "PerformanceOracle": "submitted"
+  },
+  "stats": {
+    "listedPlayers": 200,
+    "burnerWallets": 20,
+    "simulatedTrades": "250+"
+  }
+}
