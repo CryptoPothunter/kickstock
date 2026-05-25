@@ -1,0 +1,6 @@
+{
+  "name": "@kickstock/config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "players.config.js"
+}

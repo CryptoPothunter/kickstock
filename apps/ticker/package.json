@@ -1,0 +1,10 @@
+{
+  "name": "@kickstock/ticker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'ticker dev placeholder'",
+    "build": "echo 'ticker build placeholder'",
+    "typecheck": "echo 'ticker typecheck placeholder'"
+  }
+}

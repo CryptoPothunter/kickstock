@@ -1,0 +1,17 @@
+{
+  "name": "kickstock",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KickStock — FanFi: The On-Chain Capital Market for Football Fandom",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

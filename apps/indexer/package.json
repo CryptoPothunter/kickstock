@@ -1,0 +1,10 @@
+{
+  "name": "@kickstock/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'indexer dev placeholder'",
+    "build": "echo 'indexer build placeholder'",
+    "typecheck": "echo 'indexer typecheck placeholder'"
+  }
+}

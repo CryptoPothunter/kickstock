@@ -1,0 +1,10 @@
+{
+  "name": "@kickstock/research",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'research dev placeholder'",
+    "build": "echo 'research build placeholder'",
+    "typecheck": "echo 'research typecheck placeholder'"
+  }
+}
