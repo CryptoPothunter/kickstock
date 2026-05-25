@@ -98,7 +98,19 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
 
 ## Player Roster
 
-150 star players across all 48 qualified 2026 World Cup teams. See `packages/config/players.config.js`.
+150 star players across all **48 projected qualified nations** for the 2026 FIFA World Cup. See `packages/config/players.config.js`.
+
+- **Hosts**: USA, Mexico, Canada
+- **UEFA (16)**: France, England, Spain, Germany, Netherlands, Portugal, Belgium, Croatia, Italy, Switzerland, Denmark, Poland, Austria, Turkey, Serbia, Ukraine
+- **CONMEBOL (6)**: Argentina, Brazil, Uruguay, Colombia, Ecuador, Paraguay
+- **AFC (8)**: Japan, South Korea, Australia, Iran, Saudi Arabia, Iraq, Qatar, Uzbekistan
+- **CAF (9)**: Morocco, Senegal, Nigeria, Egypt, Cameroon, Ivory Coast, Algeria, Ghana, Tunisia
+- **CONCACAF (3 non-host)**: Panama, Costa Rica, Jamaica
+- **Play-off / Additional**: Norway, Sweden, Scotland
+
+**Position distribution**: 69 FW / 54 MF / 17 DF / 10 GK — star-heavy roster optimized for trading interest.
+
+Includes helpers: `COUNTRIES`, `PLAYER_BY_ID`, `PLAYERS_BY_COUNTRY` for programmatic access.
 
 ## Getting Started
 
