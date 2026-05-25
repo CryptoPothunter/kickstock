@@ -27,6 +27,8 @@ kickstock/
 │   ├── src/
 │   │   ├── PlayerToken.sol             # Per-player ERC-20 with built-in dividend accumulator
 │   │   ├── PlayerTokenFactory.sol      # EIP-1167 minimal proxy clone factory
+│   │   ├── PlayerMarket.sol             # Primary market: bonding curve buy/sell + fee split
+│   │   ├── PerformanceOracle.sol       # Oracle: push stats → distribute dividends
 │   │   ├── MockUSDT.sol                # Testnet ERC-20 + faucet
 │   │   └── libraries/
 │   │       ├── BondingCurve.sol        # Pure function curve math
@@ -88,9 +90,42 @@ Performance dividends use a per-token `accDivPerShare` accumulator over `eligibl
   - Claim, re-claim after new accrual
   - Fuzz: dividend conservation + anti-siphon
 
+### M3 — PlayerMarket (Primary Market, No Graduation) ✅
+- [x] `PlayerMarket.sol` — Primary market with linear bonding curve trading
+  - `listPlayer` / `listPlayersBatch` — deploy PlayerToken clones via factory
+  - `quoteBuy` / `quoteSell` / `currentPrice` — view functions for quoting
+  - `buy(playerId, shares, maxTotal)` — buy on bonding curve with slippage protection
+  - `sell(playerId, shares, minNet)` — sell on bonding curve with slippage protection
+  - `_splitFee` — three-way fee split: referral → dividend pool → protocol
+  - `setReferrer` — one-time referral link binding
+  - `fundDividends` — external dividend budget injection
+  - `distribute` — oracle-gated dividend distribution from budget
+  - `withdrawProtocolFees` / `setOracle` / `setParams` — admin functions
+  - Events: PlayerListed / Bought / Sold / ReferralPaid / DividendFunded / DividendDistributed / ParamUpdated
+- [x] `PlayerMarket.t.sol` — 31 tests:
+  - Reserve invariant: `reserve == reserveOf(supply)` after every buy/sell
+  - Monetary conservation: `usdt.balanceOf(market) == Σreserve + ΣdividendBudget + protocolFees`
+  - Full sell-off: any holder can sell all shares without revert
+  - Three-way fee split: correct with/without referrer
+  - Slippage protection: buy/sell revert when limits exceeded
+  - Fuzz: reserve invariant + monetary conservation
+
+### M4 — Oracle + Dividend Distribution ✅
+- [x] `PerformanceOracle.sol` — Match performance oracle
+  - `pushStat(playerId, statType)` — push single stat, trigger dividend distribution
+  - `pushBatch(playerIds, statTypes)` — batch push for match rounds
+  - `setStatReward` — configurable reward per stat type
+  - Default rewards: GOAL=50 / ASSIST=25 / CLEAN_SHEET=20 / MOTM=30 mUSDT
+  - Zero-reward stats (RED_CARD) skipped in batch, revert on single push
+- [x] `PerformanceOracle.t.sol` — 19 tests:
+  - Access control: only owner can push stats
+  - Budget insufficient revert
+  - Batch correctness: multi-player, multi-stat
+  - End-to-end: GOAL → distribute → accrue → claim full chain
+  - Fuzz: dividend conservation across varying holder counts
+- [x] **101 tests passing** across all 6 test suites
+
 ### Upcoming
-- [ ] M3 — PlayerMarket (primary market: buy/sell/fees/graduation trigger)
-- [ ] M4 — PerformanceOracle + dividend distribution
 - [ ] M5 — Deploy to X Layer Testnet + OKLink verification
 - [ ] M6 — Indexer + REST + Frontend MVP
 - [ ] M7 — Graduation + AMM
