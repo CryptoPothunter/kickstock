@@ -1,3 +1,5 @@
+[**Live Demo: https://ln6j8wpg.mule.page/**](https://ln6j8wpg.mule.page/)
+
 # KickStock — FanFi: The On-Chain Capital Market for Football Fandom
 
 **Own the players. Trade the Cup.** KickStock turns every World Cup footballer into a tradeable on-chain stock on **X Layer** — priced by a bonding curve, graduating into an AMM, paying performance dividends, bundled into ETFs, and rated by an on-chain research desk.
